@@ -1,7 +1,7 @@
 class BaseFetcher:
 
-    def fetch_items(self):
-        raise NotImplementedError
+    def __init__(self, url):
+        self.url = url
 
-    def save_item(self, title: str, content: str) -> None:
-        pass
+    def run_pipeline(self):
+        raise NotImplementedError

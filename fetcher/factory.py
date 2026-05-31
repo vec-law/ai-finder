@@ -12,6 +12,7 @@ def get_fetchers() -> list[BaseFetcher]:
     for key, value in os.environ.items():
         if key.startswith("HTML_SEARCH_URL") and value:
             fetchers.append(HTMLScraper(url=value))
+            
         if key.startswith("API_SEARCH_URL") and value:
             fetchers.append(APIClient(url=value))
 
