@@ -31,88 +31,50 @@ class HTMLScraper(BaseFetcher):
         }
 
     def run_pipeline(self):
-        if not (links_dict_list := self._fetch_links()):
+        if not (url_dict := self._fetch_links()):
             return
 
-        links_dict = self._del_duplicated_links(links_dict_list)
-
+        links_dict = self._del_duplicated_links(url_dict)
         self._save_links_in_html(links_dict)
-
-    def _del_duplicated_links(self, links: list[dict]) -> dict:
-        common = set()
-        if len(links) >= 2:
-            common = set(links[0].keys())
-            for links_dict in links[1:]:
-                common &= set(links_dict.keys())
-
-        unique_links_dict = {}
-        for links_dict in links:
-            for href, title in links_dict.items():
-                if href not in common:
-                    unique_links_dict[href] = title
-
-        segments = [urlparse(href).path.split("/")[1] for href in unique_links_dict.keys()]
-        counter = Counter(segments)
-        total = len(segments)
-        dominant = {seg for seg, count in counter.items() if count / total >= 0.2}
-
-        result_dict = {
-            href: title
-            for href, title in unique_links_dict.items()
-            if urlparse(href).path.split("/")[1] in dominant
-        }
-        return result_dict
-    
-    def _make_links_soup(self, content):
-        soup = BeautifulSoup(content, "html.parser")
-
-        links_soup_dict = {}
-        for link in soup.find_all("a", href=True):
-            base_url = f"{urlparse(self.url).scheme}://{urlparse(self.url).netloc}"
-            href = link["href"]
-            full_href = href if href.startswith("http") else f"{base_url}{href}"
-            links_soup_dict[full_href] = link.get_text(strip=True)
-
-        return links_soup_dict
-
-    def _save_links_in_html(self, links_dict : dict):
-        domain = urlparse(self.url).netloc.replace(".", "_")
-        os.makedirs("temp", exist_ok=True)
-        filename = f"temp/links_{domain}.html"
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write("<html><body>\n")
-            for link, title in links_dict.items():
-                f.write(f"<p><a href='{link}'>{title}</a></p>\n")
-            f.write("</body></html>")
-
-    def _fetch_content_with_curl_cffi(self, max_pages=1):
-        if max_pages < 1:
-            return
+       
+    def _fetch_content(self, url_list: list):
+        if not url_list:
+            return None
         
-        content_list = []
+        response = requests.get(url_list[0], impersonate="chrome", headers=self.headers)
+        print(f"[{urlparse(url_list[0]).netloc}] Page: 1, Status: {response.status_code}")
 
-        if "{page_number}" not in self.url:
-            max_pages = 1
+        if response.status_code == 200:
+            content_dict = {url_list[0]: response.text}
+            if len(url_list) > 1:
+                rest = self._fetch_content_with_curl_cffi(url_list[1:])
+                if rest:
+                    content_dict.update(rest)
+        else:
+            content_dict = self._fetch_content_with_playwright(url_list)
 
-        for page_number in range(1, max_pages + 1):
-            current_url = self.url.replace("{page_number}", str(page_number))
-            response = requests.get(current_url, impersonate="chrome", headers=self.headers)
+        if not content_dict:
+            return None
+        
+        return content_dict
+    
+    def _fetch_content_with_curl_cffi(self, url_list):     
+        content_dict = {}
 
-            print(f"[{urlparse(self.url).netloc}] Page:{page_number} Status: {response.status_code}")
+        for i, url in enumerate(url_list, start=2):
+            response = requests.get(url, impersonate="chrome", headers=self.headers)
+            print(f"[{urlparse(url).netloc}] Page: {i}, Status: {response.status_code}")
 
             if response.status_code != 200:
                 break
 
-            content_list.append(response.text)
+            content_dict[url] = response.text
 
-        if not content_list:
+        if not content_dict:
             return None
-        return content_list
-
-    def _fetch_content_with_playwright(self, max_pages=1):
-        if max_pages < 1:
-            return
-        
+        return content_dict
+    
+    def _fetch_content_with_playwright(self, url_list):   
         with sync_playwright() as p:
             context = p.chromium.launch_persistent_context(
                 user_data_dir=self.chrome_profile,
@@ -121,45 +83,96 @@ class HTMLScraper(BaseFetcher):
                 args=["--profile-directory=Default"],
             )
 
-            content_list = []
+            content_dict = {}
 
-            if "{page_number}" not in self.url:
-                max_pages = 1
-
-            for page_number in range(1, max_pages + 1):
-                current_url = self.url.replace("{page_number}", str(page_number))
+            for i, url in enumerate(url_list, start=1):
                 page = context.new_page()
-                response = page.goto(current_url, wait_until="domcontentloaded", timeout=30000)
+                response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                print(f"[{urlparse(url).netloc}] Page: {i}, Status: {response.status}")
 
-                print(f"[{urlparse(self.url).netloc}] Page:{page_number} Status: {response.status}")
-
-                time.sleep(30) if page_number == 1 else time.sleep(1)
+                if i == 1:
+                    time.sleep(60)
+                else:
+                    time.sleep(1)
 
                 if response.status != 200:
                     break
 
-                content_list.append(page.content())
+                content_dict[url] = page.content()
 
             context.close()
 
-        if not content_list:
+        if not content_dict:
             return None
-        return content_list
-
+        return content_dict
+    
     def _fetch_links(self):
-        url = self.url.replace("{page_number}", str(1))
-        response = requests.get(url, impersonate="chrome", headers=self.headers)
+        if not self.max_pages or self.max_pages < 1 or "{page_number}" not in self.url:
+            return None
 
-        if response.status_code == 200:
-            content_list = self._fetch_content_with_curl_cffi(self.max_pages)
+        url_list = [
+            self.url.replace(
+                "{page_number}",
+                str(page_number)
+            ) for page_number in range(1, self.max_pages + 1)
+        ]
 
-        else:
-            content_list = self._fetch_content_with_playwright(self.max_pages)
+        content_dict = self._fetch_content(url_list)
 
-        if not content_list:
+        if not content_dict:
             return None
         
-        return [self._make_links_soup(content) for content in content_list]
+        url_dict = {}
+        for url, content in content_dict.items():
+            url_dict[url] = self._make_link_soup(content)
+        
+        return url_dict
     
+    def _make_link_soup(self, content):
+        soup = BeautifulSoup(content, "html.parser")
 
+        link_dict = {}
+        for link in soup.find_all("a", href=True):
+            base_url = f"{urlparse(self.url).scheme}://{urlparse(self.url).netloc}"
+            href = link["href"]
+            full_href = href if href.startswith("http") else f"{base_url}{href}"
+            link_dict[full_href] = {"title": link.get_text(strip=True)}
+
+        return link_dict
     
+    def _del_duplicated_links(self, url_dict: dict) -> dict:    
+        common = set()
+        if len(url_dict) >= 2:
+            url_dict_keys = list(url_dict.keys())
+            common = set(url_dict[url_dict_keys[0]].keys())
+            for url in url_dict_keys[1:]:
+                common &= set(url_dict[url].keys())
+
+        link_dict = {}
+        for url in url_dict.keys():
+            for link in url_dict[url].keys():
+                if link not in common:
+                    link_dict[link] = url_dict[url][link]
+
+        segments = [urlparse(link).path.split("/")[1] for link in link_dict.keys()]
+        counter = Counter(segments)
+        total = len(segments)
+        dominant = {seg for seg, count in counter.items() if count / total >= 0.2}
+
+        result_dict = {}
+        for link in link_dict.keys():
+            if urlparse(link).path.split("/")[1] in dominant:
+                result_dict[link] = link_dict[link]
+
+        return result_dict
+    
+    def _save_links_in_html(self, links_dict: dict):
+        domain = urlparse(self.url).netloc.replace(".", "_")
+        os.makedirs("temp", exist_ok=True)
+        filename = f"temp/links_{domain}.html"
+        
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write("<html><body>\n")
+            for link, data in links_dict.items():
+                f.write(f"<p><a href='{link}'>{data['title']}</a></p>\n")
+            f.write("</body></html>")
