@@ -19,11 +19,11 @@ def get_actual_config():
     return hashlib.sha256(config.encode()).hexdigest()
     
 def set_config():
-    if not (config := get_actual_config()):
+    if not (config_hash := get_actual_config()):
         raise ValueError("Brak konfiguracji")
 
-    if config != get_saved_config():
+    if config_hash != get_saved_config():
         del_old_configs()
-        save_config(config)
+        save_config(config_hash)
     
-    return True
+    return config_hash

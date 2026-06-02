@@ -10,13 +10,13 @@ load_dotenv()
 def run_worker():
     while True:
         try:
-            set_config()
+            config_hash = set_config()
         except Exception as e:
             print(f"Błąd konfiguracji: {e}")
             return
 
         threads = []
-        for fetcher in get_fetchers():
+        for fetcher in get_fetchers(config_hash):
             thread = Thread(target=fetcher.run_pipeline)
             thread.start()
             threads.append(thread)

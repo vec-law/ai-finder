@@ -7,12 +7,13 @@ from curl_cffi import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from collections import Counter
+from db.queries.link import save_links
 
 load_dotenv()
 
 class HTMLScraper(BaseFetcher):
-    def __init__(self, url):
-        super().__init__(url)
+    def __init__(self, config_hash, url):
+        super().__init__(config_hash, url)
         self.chrome_path = os.getenv("CHROME_PATH")
         self.chrome_profile = os.getenv("CHROME_PROFILE")
         self.max_pages = int(os.getenv("MAX_PAGES"))
@@ -34,8 +35,13 @@ class HTMLScraper(BaseFetcher):
         if not (url_dict := self._fetch_links()):
             return
 
-        links_dict = self._filter_links(url_dict)
-        self._save_links_in_html(links_dict)
+        if not (links_dict := self._filter_links(url_dict)):
+            return
+
+        if not(save_links(self.config_hash, links_dict)):
+            return
+
+        # self._save_links_in_html(links_dict)
         
     def _fetch_links(self):
         if not self.max_pages or self.max_pages < 1 or "{page_number}" not in self.url:
