@@ -34,7 +34,7 @@ class HTMLScraper(BaseFetcher):
         if not (url_dict := self._fetch_links()):
             return
 
-        links_dict = self._del_duplicated_links(url_dict)
+        links_dict = self._filter_links(url_dict)
         self._save_links_in_html(links_dict)
         
     def _fetch_links(self):
@@ -127,7 +127,6 @@ class HTMLScraper(BaseFetcher):
                     curr_links = set(url_dict[url].keys())
                     similarity_prev = len(prev_links & curr_links) / len(prev_links | curr_links)
                     similarity_first = len(first_links & curr_links) / len(first_links | curr_links)
-                    print(f"similarity_prev: {similarity_prev}, similarity_first: {similarity_first}")
                     if similarity_prev >= 0.6 or similarity_first >= 0.6:
                         break
 
@@ -158,7 +157,7 @@ class HTMLScraper(BaseFetcher):
 
         return link_dict
     
-    def _del_duplicated_links(self, url_dict: dict) -> dict:    
+    def _filter_links(self, url_dict: dict) -> dict:    
         common = set()
         if len(url_dict) >= 2:
             url_dict_keys = list(url_dict.keys())
