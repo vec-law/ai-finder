@@ -36,76 +36,7 @@ class HTMLScraper(BaseFetcher):
 
         links_dict = self._del_duplicated_links(url_dict)
         self._save_links_in_html(links_dict)
-       
-    def _fetch_content(self, url_list: list):
-        if not url_list:
-            return None
         
-        response = requests.get(url_list[0], impersonate="chrome", headers=self.headers)
-        print(f"[{urlparse(url_list[0]).netloc}] Page: 1, Status: {response.status_code}")
-
-        if response.status_code == 200:
-            content_dict = {url_list[0]: response.text}
-            if len(url_list) > 1:
-                rest = self._fetch_content_with_curl_cffi(url_list[1:])
-                if rest:
-                    content_dict.update(rest)
-        else:
-            content_dict = self._fetch_content_with_playwright(url_list)
-
-        if not content_dict:
-            return None
-        
-        return content_dict
-    
-    def _fetch_content_with_curl_cffi(self, url_list):     
-        content_dict = {}
-
-        for i, url in enumerate(url_list, start=2):
-            response = requests.get(url, impersonate="chrome", headers=self.headers)
-            print(f"[{urlparse(url).netloc}] Page: {i}, Status: {response.status_code}")
-
-            if response.status_code != 200:
-                break
-
-            content_dict[url] = response.text
-
-        if not content_dict:
-            return None
-        return content_dict
-    
-    def _fetch_content_with_playwright(self, url_list):   
-        with sync_playwright() as p:
-            context = p.chromium.launch_persistent_context(
-                user_data_dir=self.chrome_profile,
-                executable_path=self.chrome_path,
-                headless=False,
-                args=["--profile-directory=Default"],
-            )
-
-            content_dict = {}
-
-            for i, url in enumerate(url_list, start=1):
-                page = context.new_page()
-                response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                print(f"[{urlparse(url).netloc}] Page: {i}, Status: {response.status}")
-
-                if i == 1:
-                    time.sleep(60)
-                else:
-                    time.sleep(1)
-
-                if response.status != 200:
-                    break
-
-                content_dict[url] = page.content()
-
-            context.close()
-
-        if not content_dict:
-            return None
-        return content_dict
-    
     def _fetch_links(self):
         if not self.max_pages or self.max_pages < 1 or "{page_number}" not in self.url:
             return None
@@ -117,17 +48,102 @@ class HTMLScraper(BaseFetcher):
             ) for page_number in range(1, self.max_pages + 1)
         ]
 
-        content_dict = self._fetch_content(url_list)
-
-        if not content_dict:
+        if not url_list:
             return None
         
-        url_dict = {}
-        for url, content in content_dict.items():
-            url_dict[url] = self._make_link_soup(content)
+        response = requests.get(url_list[0], impersonate="chrome", headers=self.headers)
+        print(f"[{urlparse(url_list[0]).netloc}] Page: 1, Status: {response.status_code}")
+
+        if response.status_code == 200:
+            first_links = self._make_link_soup(response.text)
+            url_dict = {url_list[0]: first_links}
+            if len(url_list) > 1:
+                rest = self._fetch_links_with_curl_cffi(url_list[1:], set(first_links.keys()))
+                if rest:
+                    url_dict.update(rest)
+        else:
+            url_dict = self._fetch_links_with_playwright(url_list)
+
+        if not url_dict:
+            return None
         
         return url_dict
     
+    def _fetch_links_with_curl_cffi(self, url_list, first_links):     
+        url_dict = {}
+        prev_links = None
+
+        for i, url in enumerate(url_list, start=2):
+            response = requests.get(url, impersonate="chrome", headers=self.headers)
+            print(f"[{urlparse(url).netloc}] Page: {i}, Status: {response.status_code}")
+
+            if response.status_code != 200:
+                break
+
+            url_dict[url] = {}
+            url_dict[url] = self._make_link_soup(response.text)
+
+            if i >= 3 and prev_links is not None:
+                curr_links = set(url_dict[url].keys())
+                similarity_prev = len(prev_links & curr_links) / len(prev_links | curr_links)
+                similarity_first = len(first_links & curr_links) / len(first_links | curr_links)
+                if similarity_prev >= 0.8 or similarity_first >= 0.8:
+                    break
+
+            prev_links = set(url_dict[url].keys())
+
+        if not url_dict:
+            return None
+        return url_dict
+    
+    def _fetch_links_with_playwright(self, url_list):   
+        with sync_playwright() as p:
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=self.chrome_profile,
+                executable_path=self.chrome_path,
+                headless=False,
+                args=["--profile-directory=Default"],
+            )
+
+            url_dict = {}
+            prev_links = None
+            first_links = None
+
+            for i, url in enumerate(url_list, start=1):
+                page = context.new_page()
+                response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                print(f"[{urlparse(url).netloc}] Page: {i}, Status: {response.status}")
+
+                if response.status != 200:
+                    break
+
+                url_dict[url] = {}
+                url_dict[url] = self._make_link_soup(page.content())
+
+                if i == 1:
+                    first_links = set(url_dict[url].keys())
+
+                if i >= 3 and prev_links is not None and first_links is not None:
+                    curr_links = set(url_dict[url].keys())
+                    similarity_prev = len(prev_links & curr_links) / len(prev_links | curr_links)
+                    similarity_first = len(first_links & curr_links) / len(first_links | curr_links)
+                    print(f"similarity_prev: {similarity_prev}, similarity_first: {similarity_first}")
+                    if similarity_prev >= 0.6 or similarity_first >= 0.6:
+                        break
+
+                if i == 1:
+                    time.sleep(30)
+                else:
+                    time.sleep(1)
+
+                prev_links = set(url_dict[url].keys())
+
+            context.close()
+
+        if not url_dict:
+            return None
+        return url_dict
+
     def _make_link_soup(self, content):
         soup = BeautifulSoup(content, "html.parser")
 
@@ -136,7 +152,9 @@ class HTMLScraper(BaseFetcher):
             base_url = f"{urlparse(self.url).scheme}://{urlparse(self.url).netloc}"
             href = link["href"]
             full_href = href if href.startswith("http") else f"{base_url}{href}"
-            link_dict[full_href] = {"title": link.get_text(strip=True)}
+            parsed = urlparse(full_href)
+            clean_href = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+            link_dict[clean_href] = {"title": link.get_text(strip=True)}
 
         return link_dict
     
@@ -145,7 +163,7 @@ class HTMLScraper(BaseFetcher):
         if len(url_dict) >= 2:
             url_dict_keys = list(url_dict.keys())
             common = set(url_dict[url_dict_keys[0]].keys())
-            for url in url_dict_keys[1:]:
+            for url in url_dict_keys[1:3]:
                 common &= set(url_dict[url].keys())
 
         link_dict = {}
