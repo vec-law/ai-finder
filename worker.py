@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from threading import Thread
 from fetcher.factory import get_fetchers
-from config.manager import set_config
+from config_manager import set_config
 
 load_dotenv()
 
