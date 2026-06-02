@@ -153,7 +153,7 @@ class HTMLScraper(BaseFetcher):
             full_href = href if href.startswith("http") else f"{base_url}{href}"
             parsed = urlparse(full_href)
             clean_href = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-            link_dict[clean_href] = {"title": link.get_text(strip=True)}
+            link_dict[clean_href] = link.get_text(strip=True)
 
         return link_dict
     
@@ -191,5 +191,5 @@ class HTMLScraper(BaseFetcher):
         with open(filename, "w", encoding="utf-8") as f:
             f.write("<html><body>\n")
             for link, data in links_dict.items():
-                f.write(f"<p><a href='{link}'>{data['title']}</a></p>\n")
+                f.write(f"<p><a href='{link}'>{data}</a></p>\n")
             f.write("</body></html>")
