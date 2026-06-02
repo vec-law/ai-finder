@@ -1,0 +1,26 @@
+CREATE TABLE IF NOT EXISTS status (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS source (
+    id SERIAL PRIMARY KEY,
+    address TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS search (
+    id SERIAL PRIMARY KEY,
+    source_id INTEGER NOT NULL REFERENCES source(id) ON DELETE CASCADE,
+    status_id INTEGER NOT NULL REFERENCES status(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS link (
+    id SERIAL PRIMARY KEY,
+    search_id INTEGER NOT NULL REFERENCES search(id) ON DELETE CASCADE,
+    url TEXT NOT NULL,
+    title TEXT,
+    content TEXT,
+    embedding VECTOR(768),
+    status_id INTEGER NOT NULL REFERENCES status(id)
+);
