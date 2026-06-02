@@ -199,3 +199,32 @@ class HTMLScraper(BaseFetcher):
             for link, data in links_dict.items():
                 f.write(f"<p><a href='{link}'>{data}</a></p>\n")
             f.write("</body></html>")
+
+    def _fetch_single_html(self, url):
+        if not url:
+            return None
+
+        response = requests.get(url, impersonate="chrome", headers=self.headers)
+        print(f"[{urlparse(url).netloc}] Status: {response.status_code}")
+
+        if response.status_code == 200:
+            return response.text
+
+        return self._fetch_single_html_with_playwright(url)
+
+    def _fetch_single_html_with_playwright(self, url):
+        with sync_playwright() as p:
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=self.chrome_profile,
+                executable_path=self.chrome_path,
+                headless=False,
+                args=["--profile-directory=Default"],
+            )
+
+            page = context.new_page()
+            response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            html = page.content() if response.status == 200 else None
+            context.close()
+
+            return html
+
