@@ -31,6 +31,12 @@ class HTMLScraper(BaseFetcher):
             "Sec-Fetch-User": "?1",
         }
 
+    def get_page_fetchers(self, link_ids):
+        pass
+
+    def fetch_page(self, link_id):
+        pass
+
     def fetch_links(self):
         try:
             if not (url_dict := self._scrap_links()):

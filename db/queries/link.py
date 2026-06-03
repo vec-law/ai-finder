@@ -21,19 +21,19 @@ def save_links(config_hash, links_dict: dict):
     finally:
         conn.close()
 
-def get_pending_links(config_hash):
+def get_pending_link_ids(config_hash):
     conn = get_connection()
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, url FROM link
+            SELECT id FROM link
             JOIN config ON config.id = config_id
             JOIN status ON status.id = status_id
             WHERE config.hash = %s
             AND status.name = 'pending'
         """, (config_hash, ))
 
-        return cur.fetchall()
+        return [row[0] for row in cur.fetchall()]
     
     finally:
         conn.close()
