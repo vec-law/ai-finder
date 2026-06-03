@@ -31,18 +31,23 @@ class HTMLScraper(BaseFetcher):
             "Sec-Fetch-User": "?1",
         }
 
-    def run_pipeline(self):
-        if not (url_dict := self._fetch_links()):
-            return
+    def scrap_links(self):
+        try:
+            if not (url_dict := self._fetch_links()):
+                print(f"[{self.url}] Błąd: nie pobrano linków")
+                return
 
-        if not (links_dict := self._filter_links(url_dict)):
-            return
+            if not (links_dict := self._filter_links(url_dict)):
+                print(f"[{self.url}] Błąd: nie przefiltrowano linków")
+                return
 
-        if not(save_links(self.config_hash, links_dict)):
-            return
+            if not (save_links(self.config_hash, links_dict)):
+                print(f"[{self.url}] Błąd: nie zapisano linków")
+                return
 
-        # self._save_links_in_html(links_dict)
-        
+        except Exception as e:
+            print(f"[{self.url}] Błąd scrap_links: {e}")
+            
     def _fetch_links(self):
         if not self.max_pages or self.max_pages < 1 or "{page_number}" not in self.url:
             return None

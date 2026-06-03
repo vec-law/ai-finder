@@ -14,16 +14,22 @@ def run_worker():
         except Exception as e:
             print(f"Błąd konfiguracji: {e}")
             return
+        
+        try:
+            fetchers = get_fetchers(config_hash)
+        except Exception as e:
+            print(f"Błąd pobierania fetcherów: {e}")
+            return
 
         threads = []
-        for fetcher in get_fetchers(config_hash):
-            thread = Thread(target=fetcher.run_pipeline)
+        for fetcher in fetchers:
+            thread = Thread(target=fetcher.scrap_links)
             thread.start()
             threads.append(thread)
 
         for thread in threads:
             thread.join()
 
-        return
+        return # TODO: remove in production
 
-        time.sleep(int(os.getenv("INTERVAL")))
+        time.sleep(int(os.getenv("INTERVAL", 3600)))

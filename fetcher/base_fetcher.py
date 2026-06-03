@@ -4,5 +4,5 @@ class BaseFetcher:
         self.config_hash = config_hash
         self.url = url
 
-    def run_pipeline(self):
+    def scrap_links(self):
         raise NotImplementedError
