@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from fetcher.base_fetcher import BaseFetcher
 from fetcher.html_scraper import HTMLScraper
 from fetcher.api_client import APIClient
+from db.queries.fetcher import save_fetcher
 
 load_dotenv()
 
@@ -11,9 +12,11 @@ def get_fetchers(config_hash) -> list[BaseFetcher]:
 
     for key, value in os.environ.items():
         if key.startswith("HTML_SEARCH_URL") and value:
-            fetchers.append(HTMLScraper(config_hash, url=value))
+            fetcher_id = save_fetcher(config_hash, value)
+            fetchers.append(HTMLScraper(fetcher_id, url=value))
             
         if key.startswith("API_SEARCH_URL") and value:
-            fetchers.append(APIClient(config_hash, url=value))
+            fetcher_id = save_fetcher(config_hash, value)
+            fetchers.append(APIClient(fetcher_id, url=value))
 
     return fetchers

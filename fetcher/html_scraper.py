@@ -12,8 +12,8 @@ from db.queries.link import save_links
 load_dotenv()
 
 class HTMLScraper(BaseFetcher):
-    def __init__(self, config_hash, url):
-        super().__init__(config_hash, url)
+    def __init__(self, fetcher_id, url):
+        super().__init__(fetcher_id, url)
         self.chrome_path = os.getenv("CHROME_PATH")
         self.chrome_profile = os.getenv("CHROME_PROFILE")
         self.max_pages = int(os.getenv("MAX_PAGES"))
@@ -38,21 +38,17 @@ class HTMLScraper(BaseFetcher):
         pass
 
     def fetch_links(self):
-        try:
-            if not (url_dict := self._scrap_links()):
-                print(f"[{self.url}] Błąd: nie pobrano linków")
-                return
+        if not (url_dict := self._scrap_links()):
+            print(f"[{self.url}] Błąd: nie pobrano linków")
+            return
 
-            if not (links_dict := self._filter_links(url_dict)):
-                print(f"[{self.url}] Błąd: nie przefiltrowano linków")
-                return
+        if not (links_dict := self._filter_links(url_dict)):
+            print(f"[{self.url}] Błąd: nie przefiltrowano linków")
+            return
 
-            if not (save_links(self.config_hash, links_dict)):
-                print(f"[{self.url}] Błąd: nie zapisano linków")
-                return
-
-        except Exception as e:
-            print(f"[{self.url}] Błąd fetch_links: {e}")
+        if not (save_links(self.fetcher_id, links_dict)):
+            print(f"[{self.url}] Błąd: nie zapisano linków")
+            return
             
     def _scrap_links(self):
         if not self.max_pages or self.max_pages < 1 or "{page_number}" not in self.url:
@@ -199,17 +195,6 @@ class HTMLScraper(BaseFetcher):
                 result_dict[link] = link_dict[link]
 
         return result_dict
-    
-    def _save_links_in_html(self, links_dict: dict):
-        domain = urlparse(self.url).netloc.replace(".", "_")
-        os.makedirs("temp", exist_ok=True)
-        filename = f"temp/links_{domain}.html"
-        
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write("<html><body>\n")
-            for link, data in links_dict.items():
-                f.write(f"<p><a href='{link}'>{data}</a></p>\n")
-            f.write("</body></html>")
 
     def _scrap_single_html(self, url):
         if not url:
@@ -238,4 +223,15 @@ class HTMLScraper(BaseFetcher):
             context.close()
 
             return html
-
+        
+    # TODO: remove in production
+    def _save_links_in_html(self, links_dict: dict):
+        domain = urlparse(self.url).netloc.replace(".", "_")
+        os.makedirs("temp", exist_ok=True)
+        filename = f"temp/links_{domain}.html"
+        
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write("<html><body>\n")
+            for link, data in links_dict.items():
+                f.write(f"<p><a href='{link}'>{data}</a></p>\n")
+            f.write("</body></html>")

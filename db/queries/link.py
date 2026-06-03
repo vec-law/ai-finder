@@ -1,19 +1,19 @@
 from db.connection import get_connection
 
-def save_links(config_hash, links_dict: dict):
+def save_links(fetcher_id, links_dict: dict):
     conn = get_connection()
     try:
         cur = conn.cursor()
         for url, title in links_dict.items():
             cur.execute("""
-                INSERT INTO link (url, title, config_id, status_id)
+                INSERT INTO link (url, title, fetcher_id, status_id)
                 VALUES (
                     %s,
                     %s,
-                    (SELECT id from config WHERE hash = %s),
+                    %s,
                     (SELECT id FROM status WHERE name = 'pending')    
                 )
-            """, (url, title, config_hash))
+            """, (url, title, fetcher_id))
         conn.commit()
         
         return True
@@ -21,17 +21,17 @@ def save_links(config_hash, links_dict: dict):
     finally:
         conn.close()
 
-def get_pending_link_ids(config_hash):
+def get_pending_link_ids(fetcher_id):
     conn = get_connection()
     try:
         cur = conn.cursor()
         cur.execute("""
             SELECT link.id FROM link
-            JOIN config ON config.id = config_id
+            JOIN fetcher ON fetcher.id = fetcher_id
             JOIN status ON status.id = status_id
-            WHERE config.hash = %s
+            WHERE fetcher_id = %s
             AND status.name = 'pending'
-        """, (config_hash, ))
+        """, (fetcher_id, ))
 
         return [row[0] for row in cur.fetchall()]
     

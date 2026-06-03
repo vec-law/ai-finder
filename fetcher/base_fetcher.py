@@ -1,7 +1,7 @@
 class BaseFetcher:
 
-    def __init__(self, config_hash, url):
-        self.config_hash = config_hash
+    def __init__(self, fetcher_id, url):
+        self.fetcher_id = fetcher_id
         self.url = url
 
     def fetch_links(self):
