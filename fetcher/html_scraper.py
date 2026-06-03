@@ -31,9 +31,9 @@ class HTMLScraper(BaseFetcher):
             "Sec-Fetch-User": "?1",
         }
 
-    def scrap_links(self):
+    def fetch_links(self):
         try:
-            if not (url_dict := self._fetch_links()):
+            if not (url_dict := self._scrap_links()):
                 print(f"[{self.url}] Błąd: nie pobrano linków")
                 return
 
@@ -46,9 +46,9 @@ class HTMLScraper(BaseFetcher):
                 return
 
         except Exception as e:
-            print(f"[{self.url}] Błąd scrap_links: {e}")
+            print(f"[{self.url}] Błąd fetch_links: {e}")
             
-    def _fetch_links(self):
+    def _scrap_links(self):
         if not self.max_pages or self.max_pages < 1 or "{page_number}" not in self.url:
             return None
 
@@ -69,18 +69,18 @@ class HTMLScraper(BaseFetcher):
             first_links = self._make_link_soup(response.text)
             url_dict = {url_list[0]: first_links}
             if len(url_list) > 1:
-                rest = self._fetch_links_with_curl_cffi(url_list[1:], set(first_links.keys()))
+                rest = self._scrap_links_with_curl_cffi(url_list[1:], set(first_links.keys()))
                 if rest:
                     url_dict.update(rest)
         else:
-            url_dict = self._fetch_links_with_playwright(url_list)
+            url_dict = self._scrap_links_with_playwright(url_list)
 
         if not url_dict:
             return None
         
         return url_dict
     
-    def _fetch_links_with_curl_cffi(self, url_list, first_links):     
+    def _scrap_links_with_curl_cffi(self, url_list, first_links):     
         url_dict = {}
         prev_links = None
 
@@ -107,7 +107,7 @@ class HTMLScraper(BaseFetcher):
             return None
         return url_dict
     
-    def _fetch_links_with_playwright(self, url_list):   
+    def _scrap_links_with_playwright(self, url_list):   
         with sync_playwright() as p:
             context = p.chromium.launch_persistent_context(
                 user_data_dir=self.chrome_profile,
@@ -205,7 +205,7 @@ class HTMLScraper(BaseFetcher):
                 f.write(f"<p><a href='{link}'>{data}</a></p>\n")
             f.write("</body></html>")
 
-    def _fetch_single_html(self, url):
+    def _scrap_single_html(self, url):
         if not url:
             return None
 
@@ -215,9 +215,9 @@ class HTMLScraper(BaseFetcher):
         if response.status_code == 200:
             return response.text
 
-        return self._fetch_single_html_with_playwright(url)
+        return self._scrap_single_html_with_playwright(url)
 
-    def _fetch_single_html_with_playwright(self, url):
+    def _scrap_single_html_with_playwright(self, url):
         with sync_playwright() as p:
             context = p.chromium.launch_persistent_context(
                 user_data_dir=self.chrome_profile,

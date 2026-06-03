@@ -4,5 +4,11 @@ class BaseFetcher:
         self.config_hash = config_hash
         self.url = url
 
-    def scrap_links(self):
+    def fetch_links(self):
+        raise NotImplementedError
+
+    def fetch_page(self):
+        raise NotImplementedError
+    
+    def get_page_fetchers(self):
         raise NotImplementedError
