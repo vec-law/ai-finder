@@ -45,7 +45,10 @@ def run_worker():
                 print(f"Błąd pobierania fetcherów stron: {e}")
                 return
             
-            with ThreadPoolExecutor(max_workers=10) as executor:
+            if not page_fetchers:
+                continue
+
+            with ThreadPoolExecutor(max_workers=int(os.getenv("MAX_WORKERS", 10))) as executor:
                 for page_fetcher in page_fetchers:
                     executor.submit(page_fetcher)
 
