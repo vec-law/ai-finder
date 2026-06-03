@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from collections import Counter
 from db.queries.link import save_links
+from fetcher.html.page_fetcher import HTMLPageFetcher
 
 load_dotenv()
 
@@ -32,23 +33,35 @@ class HTMLScraper(BaseFetcher):
         }
 
     def get_page_fetchers(self, link_ids):
-        pass
+        page_fetchers = []
 
-    def fetch_page(self, link_id):
-        pass
+        for link_id in link_ids:
+            page_fetchers.append(HTMLPageFetcher(
+                link_id,
+                self.headers,
+                self.chrome_profile,
+                self.chrome_path
+                )
+            )
+        
+        return page_fetchers
 
     def fetch_links(self):
-        if not (url_dict := self._scrap_links()):
-            print(f"[{self.url}] Błąd: nie pobrano linków")
-            return
+        try:
+            if not (url_dict := self._scrap_links()):
+                print(f"[{self.url}] Błąd: nie pobrano linków")
+                return
 
-        if not (links_dict := self._filter_links(url_dict)):
-            print(f"[{self.url}] Błąd: nie przefiltrowano linków")
-            return
+            if not (links_dict := self._filter_links(url_dict)):
+                print(f"[{self.url}] Błąd: nie przefiltrowano linków")
+                return
 
-        if not (save_links(self.fetcher_id, links_dict)):
-            print(f"[{self.url}] Błąd: nie zapisano linków")
-            return
+            if not (save_links(self.fetcher_id, links_dict)):
+                print(f"[{self.url}] Błąd: nie zapisano linków")
+                return
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
             
     def _scrap_links(self):
         if not self.max_pages or self.max_pages < 1 or "{page_number}" not in self.url:
@@ -184,45 +197,19 @@ class HTMLScraper(BaseFetcher):
                 if link not in common:
                     link_dict[link] = url_dict[url][link]
 
-        segments = [urlparse(link).path.split("/")[1] for link in link_dict.keys()]
+        # segments = [urlparse(link).path.split("/")[1] for link in link_dict.keys()]
+        segments = [parts[1] for link in link_dict.keys() if len(parts := urlparse(link).path.split("/")) > 1]
         counter = Counter(segments)
         total = len(segments)
         dominant = {seg for seg, count in counter.items() if count / total >= 0.2}
 
         result_dict = {}
         for link in link_dict.keys():
-            if urlparse(link).path.split("/")[1] in dominant:
+            parts = urlparse(link).path.split("/")
+            if len(parts) > 1 and parts[1] in dominant:
                 result_dict[link] = link_dict[link]
 
         return result_dict
-
-    def _scrap_single_html(self, url):
-        if not url:
-            return None
-
-        response = requests.get(url, impersonate="chrome", headers=self.headers)
-        print(f"[{urlparse(url).netloc}] Status: {response.status_code}")
-
-        if response.status_code == 200:
-            return response.text
-
-        return self._scrap_single_html_with_playwright(url)
-
-    def _scrap_single_html_with_playwright(self, url):
-        with sync_playwright() as p:
-            context = p.chromium.launch_persistent_context(
-                user_data_dir=self.chrome_profile,
-                executable_path=self.chrome_path,
-                headless=False,
-                args=["--profile-directory=Default"],
-            )
-
-            page = context.new_page()
-            response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
-            html = page.content() if response.status == 200 else None
-            context.close()
-
-            return html
         
     # TODO: remove in production
     def _save_links_in_html(self, links_dict: dict):

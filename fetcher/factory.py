@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from fetcher.base_fetcher import BaseFetcher
-from fetcher.html_scraper import HTMLScraper
+from fetcher.html.scraper import HTMLScraper
 from fetcher.api_client import APIClient
 from db.queries.fetcher import save_fetcher
 

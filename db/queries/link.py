@@ -38,6 +38,25 @@ def get_pending_link_ids(fetcher_id):
     finally:
         conn.close()
 
+def get_link_url(link_id):
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT link.url FROM link
+            WHERE link.id = %s
+        """, (link_id, ))
+
+        result = cur.fetchone()
+
+        if not result:
+            return None
+
+        return result[0]
+    
+    finally:
+        conn.close()
+
 def update_link(link_id, content, embedding, status):
     conn = get_connection()
     try:
