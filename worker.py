@@ -48,7 +48,7 @@ def run_worker():
             if not page_fetchers:
                 continue
 
-            with ThreadPoolExecutor(max_workers=int(os.getenv("MAX_WORKERS", 10))) as executor:
+            with ThreadPoolExecutor(max_workers=int(os.getenv("MAX_WORKERS", 5))) as executor:
                 for page_fetcher in page_fetchers:
                     executor.submit(page_fetcher)
 
