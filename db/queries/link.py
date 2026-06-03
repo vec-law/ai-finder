@@ -26,7 +26,7 @@ def get_pending_link_ids(config_hash):
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id FROM link
+            SELECT link.id FROM link
             JOIN config ON config.id = config_id
             JOIN status ON status.id = status_id
             WHERE config.hash = %s
