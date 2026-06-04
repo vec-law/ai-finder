@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS config (
 CREATE TABLE IF NOT EXISTS fetcher (
     id SERIAL PRIMARY KEY,
     config_id INTEGER NOT NULL REFERENCES config(id) ON DELETE CASCADE,
-    url TEXT NOT NULL
+    url TEXT NOT NULL,
+    UNIQUE (config_id, url)
 );
 
 CREATE TABLE IF NOT EXISTS link (
@@ -23,6 +24,13 @@ CREATE TABLE IF NOT EXISTS link (
     url TEXT NOT NULL,
     title TEXT,
     content TEXT,
-    embedding VECTOR(768),
-    status_id INTEGER NOT NULL REFERENCES status(id)
+    embedding VECTOR(1024),
+    status_id INTEGER NOT NULL REFERENCES status(id),
+    UNIQUE (fetcher_id, url),
+    created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX ON link USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX ON link (fetcher_id);
+CREATE INDEX ON link (status_id);
+CREATE INDEX ON config (hash);
