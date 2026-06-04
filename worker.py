@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from fetcher.factory import get_fetchers
 from config_manager import set_config
-from db.queries.link import get_pending_link_ids
+from db.queries.link import get_pending_link_ids, set_links_pending
 from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
@@ -13,6 +13,7 @@ def run_worker():
         try:
             config_hash = set_config()
             fetchers = get_fetchers(config_hash)
+            set_links_pending()
         except Exception as e:
             print(f"Błąd inicjalizacji: {e}")
             time.sleep(60)
