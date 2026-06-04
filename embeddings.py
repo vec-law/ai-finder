@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-model = SentenceTransformer('LaBSE')
+model = SentenceTransformer('intfloat/multilingual-e5-large')
 
 def get_embedding(text):
-    return model.encode(text).tolist()
+    return "[" + ",".join(map(str, model.encode(text).tolist())) + "]"
