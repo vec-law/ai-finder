@@ -30,16 +30,19 @@ class HTMLPageFetcher():
             content,
             include_tables=True,
             include_links=False,
-            favor_recall=True
+            favor_recall=True,
+            include_formatting=True,
+            include_images=False
         )
 
         if not text:
             update_link(self.link_id, None, None, "failed")
             return None
 
-        embedding = get_embedding("passage: " + text)
+        embedding = get_embedding(text)
+        embedding_str = "[" + ",".join(map(str, embedding.tolist())) + "]"
 
-        if not update_link(self.link_id, text, embedding, "completed"):
+        if not update_link(self.link_id, text, embedding_str, "completed"):
             return None
 
         return text

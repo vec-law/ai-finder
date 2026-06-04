@@ -7,7 +7,7 @@ def test_search():
         if not query:
             continue
         
-        embedding = get_embedding("query: " + query)
+        embedding = get_embedding(query)
         link_ids = search_links(embedding, limit=100)
         links = get_links(link_ids)
         
