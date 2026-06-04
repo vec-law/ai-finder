@@ -6,4 +6,4 @@ load_dotenv()
 model = SentenceTransformer('intfloat/multilingual-e5-large')
 
 def get_embedding(text):
-    return "[" + ",".join(map(str, model.encode(text).tolist())) + "]"
+    return model.encode([text])[0]

@@ -31,34 +31,30 @@ def get_links(link_ids):
             WHERE id IN %s
         """, (tuple(link_ids), ))
 
-        return [
-            {
-                "id": row[0],
-                "title": row[1],
-                "content": row[2]
-            } for row in cur.fetchall()
-        ]
+        rows = {row[0]: {"id": row[0], "title": row[1], "content": row[2]} for row in cur.fetchall()}
+        return [rows[link_id] for link_id in link_ids if link_id in rows]
     
     finally:
-        conn.close()  
+        conn.close() 
 
 def search_links(embedding, limit=None):
     conn = get_connection()
     try:
         cur = conn.cursor()
+        embedding_str = "[" + ",".join(map(str, embedding.tolist())) + "]"
         if limit:
             cur.execute("""
                 SELECT id FROM link
                 WHERE status_id = (SELECT id FROM status WHERE name = 'completed')
-                ORDER BY embedding <=> %s
+                ORDER BY embedding <=> %s::vector
                 LIMIT %s
-            """, (embedding, limit))
+            """, (embedding_str, limit))
         else:
             cur.execute("""
-            SELECT id FROM link
-            WHERE status_id = (SELECT id FROM status WHERE name = 'completed')
-            ORDER BY embedding <=> %s
-            """, (embedding,))
+                SELECT id FROM link
+                WHERE status_id = (SELECT id FROM status WHERE name = 'completed')
+                ORDER BY embedding <=> %s::vector
+            """, (embedding_str,))
 
         return [row[0] for row in cur.fetchall()]
     

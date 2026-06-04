@@ -30,7 +30,6 @@ CREATE TABLE IF NOT EXISTS link (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX ON link USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX ON link (fetcher_id);
 CREATE INDEX ON link (status_id);
 CREATE INDEX ON config (hash);
