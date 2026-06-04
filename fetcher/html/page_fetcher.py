@@ -13,12 +13,18 @@ class HTMLPageFetcher():
         self.chrome_path = path
 
     def fetch_page(self):
+        update_link(self.link_id, None, None, "running")
+
         link_url = get_link_url(self.link_id)
         
         if not link_url:
             return None
         
         content = self._scrap_single_html(link_url)
+
+        if not content:
+            update_link(self.link_id, None, None, "failed")
+            return None
 
         text = trafilatura.extract(
             content,
@@ -28,9 +34,10 @@ class HTMLPageFetcher():
         )
 
         if not text:
+            update_link(self.link_id, None, None, "failed")
             return None
 
-        embedding = get_embedding(text)
+        embedding = get_embedding("passage: " + text)
 
         if not update_link(self.link_id, text, embedding, "completed"):
             return None
