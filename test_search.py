@@ -6,6 +6,8 @@ def test_search():
         query = input("Zapytanie: ")
         if not query:
             continue
+        if query == "exit":
+            break
         
         embedding = get_embedding(query)
         link_ids = search_links(embedding, limit=100)
