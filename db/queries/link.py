@@ -42,19 +42,15 @@ def search_links(embedding, limit=None):
     try:
         cur = conn.cursor()
         embedding_str = "[" + ",".join(map(str, embedding.tolist())) + "]"
-        if limit:
-            cur.execute("""
-                SELECT id FROM link
-                WHERE status_id = (SELECT id FROM status WHERE name = 'completed')
-                ORDER BY embedding <=> %s::vector
-                LIMIT %s
-            """, (embedding_str, limit))
-        else:
-            cur.execute("""
-                SELECT id FROM link
-                WHERE status_id = (SELECT id FROM status WHERE name = 'completed')
-                ORDER BY embedding <=> %s::vector
-            """, (embedding_str,))
+        limit = limit or 100
+        
+        cur.execute("""
+            SELECT id FROM link
+            WHERE status_id = (SELECT id FROM status WHERE name = 'completed')
+            AND embedding IS NOT NULL
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+        """, (embedding_str, limit))
 
         return [row[0] for row in cur.fetchall()]
     

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS link (
     url TEXT NOT NULL,
     title TEXT,
     content TEXT,
+    content_tsv TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', coalesce(content, ''))) STORED,
     embedding VECTOR(1024),
     status_id INTEGER NOT NULL REFERENCES status(id),
     UNIQUE (fetcher_id, url),
@@ -33,3 +34,4 @@ CREATE TABLE IF NOT EXISTS link (
 CREATE INDEX ON link (fetcher_id);
 CREATE INDEX ON link (status_id);
 CREATE INDEX ON config (hash);
+CREATE INDEX ON link USING gin(content_tsv);
