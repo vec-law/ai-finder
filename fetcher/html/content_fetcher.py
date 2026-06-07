@@ -1,29 +1,31 @@
 from playwright.sync_api import sync_playwright
 from curl_cffi import requests
 from urllib.parse import urlparse
-from db.queries.link import get_link_url, update_link
+from db.queries.content import update_content, get_content_url
 import trafilatura
-from embeddings import get_embedding
+import time
 
-class HTMLPageFetcher():
-    def __init__(self, link_id, headers, chrome_profile, path):
-        self.link_id = link_id
+class HTMLContentFetcher():
+    def __init__(self, content_id, headers, chrome_profile, path):
+        self.content_id = content_id
         self.headers = headers
         self.chrome_profile = chrome_profile
         self.chrome_path = path
 
-    def fetch_page(self):
-        update_link(self.link_id, None, None, "running")
-
-        link_url = get_link_url(self.link_id)
+    def fetch_content(self):
+        time.sleep(5)
         
-        if not link_url:
+        update_content(self.content_id, None, "running")
+
+        content_url = get_content_url(self.content_id)
+        
+        if not content_url:
             return None
         
-        content = self._scrap_single_html(link_url)
+        content = self._scrap_single_html(content_url)
 
         if not content:
-            update_link(self.link_id, None, None, "failed")
+            update_content(self.content_id, None, "failed")
             return None
 
         text = trafilatura.extract(
@@ -36,13 +38,10 @@ class HTMLPageFetcher():
         )
 
         if not text:
-            update_link(self.link_id, None, None, "failed")
+            update_content(self.content_id, None, "failed")
             return None
 
-        embedding = get_embedding(text)
-        embedding_str = "[" + ",".join(map(str, embedding.tolist())) + "]"
-
-        if not update_link(self.link_id, text, embedding_str, "completed"):
+        if not update_content(self.content_id, text, "completed"):
             return None
 
         return text

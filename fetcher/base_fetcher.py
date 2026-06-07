@@ -7,6 +7,5 @@ class BaseFetcher:
     def fetch_links(self):
         raise NotImplementedError
     
-    def get_page_fetchers(self, link_ids):
+    def get_content_fetchers(self, content_ids):
         raise NotImplementedError
-

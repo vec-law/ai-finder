@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from collections import Counter
 from db.queries.link import save_links
-from fetcher.html.page_fetcher import HTMLPageFetcher
+from fetcher.html.content_fetcher import HTMLContentFetcher
 
 load_dotenv()
 
@@ -32,19 +32,19 @@ class HTMLFetcher(BaseFetcher):
             "Sec-Fetch-User": "?1",
         }
 
-    def get_page_fetchers(self, link_ids):
-        page_fetchers = []
+    def get_content_fetchers(self, content_ids):
+        content_fetchers = []
 
-        for link_id in link_ids:
-            page_fetchers.append(HTMLPageFetcher(
-                link_id,
+        for content_id in content_ids:
+            content_fetchers.append(HTMLContentFetcher(
+                content_id,
                 self.headers,
                 self.chrome_profile,
                 self.chrome_path
                 )
             )
         
-        return page_fetchers
+        return content_fetchers
 
     def fetch_links(self):
         try:

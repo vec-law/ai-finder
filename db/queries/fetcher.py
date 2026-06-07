@@ -1,14 +1,14 @@
 from db.connection import get_connection
 
-def save_fetcher(config_hash, url):
+def save_fetcher(config_id, url):
     conn = get_connection()
     try:
         cur = conn.cursor()
         cur.execute("""
             SELECT id FROM fetcher
-            WHERE config_id = (SELECT id FROM config WHERE hash = %s)
+            WHERE config_id = %s
             AND url = %s
-        """, (config_hash, url))
+        """, (config_id, url))
 
         result = cur.fetchone()
         if result:
@@ -16,19 +16,12 @@ def save_fetcher(config_hash, url):
 
         cur.execute("""
             INSERT INTO fetcher (config_id, url)
-            VALUES (
-                (SELECT id FROM config WHERE hash = %s),
-                %s
-            )
+            VALUES (%s, %s)
             RETURNING id
-        """, (config_hash, url))
+        """, (config_id, url))
         conn.commit()
 
-        result = cur.fetchone()
-        if not result:
-            return None
-        
-        return result[0]
+        return cur.fetchone()[0]
     
     finally:
         conn.close()
