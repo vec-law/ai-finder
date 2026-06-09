@@ -19,42 +19,45 @@ def run_worker():
             del_expired_links(config_id)
             set_contents_pending()
             set_embeddings_pending()
+
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             print(f"Błąd inicjalizacji: {e}")
             time.sleep(60)
             continue
 
-        # with ThreadPoolExecutor(max_workers=1) as executor:
-        #     futures = {executor.submit(fetcher.fetch_links): fetcher for fetcher in fetchers}
-        #     for future, fetcher in futures.items():
-        #         try:
-        #             future.result()
-        #         except Exception as e:
-        #             print(f"[{fetcher.url}] Błąd fetch_links: {e}")
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            futures = {executor.submit(fetcher.fetch_links): fetcher for fetcher in fetchers}
+            for future, fetcher in futures.items():
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f"[{fetcher.url}] Błąd fetch_links: {e}")
 
-        # for fetcher in fetchers:
-        #     try:
-        #         pending_content_ids = get_pending_content_ids(fetcher.fetcher_id)
-        #     except Exception as e:
-        #         print(f"Błąd pobierania contentów: {e}")
-        #         continue
+        for fetcher in fetchers:
+            try:
+                pending_content_ids = get_pending_content_ids(fetcher.fetcher_id)
+            except Exception as e:
+                print(f"Błąd pobierania contentów: {e}")
+                continue
 
-        #     try:
-        #         content_fetchers = fetcher.get_content_fetchers(pending_content_ids)
-        #     except Exception as e:
-        #         print(f"Błąd content_fetchers: {e}")
-        #         continue
+            try:
+                content_fetchers = fetcher.get_content_fetchers(pending_content_ids)
+            except Exception as e:
+                print(f"Błąd content_fetchers: {e}")
+                continue
 
-        #     if not content_fetchers:
-        #         continue
+            if not content_fetchers:
+                continue
 
-        #     with ThreadPoolExecutor(max_workers=2) as executor:
-        #         futures = {executor.submit(content_fetcher.fetch_content): content_fetcher for content_fetcher in content_fetchers}
-        #         for future, content_fetcher in futures.items():
-        #             try:
-        #                 future.result()
-        #             except Exception as e:
-        #                 print(f"Błąd fetch_content: {e}")
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = {executor.submit(content_fetcher.fetch_content): content_fetcher for content_fetcher in content_fetchers}
+                for future, content_fetcher in futures.items():
+                    try:
+                        future.result()
+                    except Exception as e:
+                        print(f"Błąd fetch_content: {e}")
 
         for fetcher in fetchers:
             try:
@@ -68,7 +71,7 @@ def run_worker():
             if not embedders:
                 continue
 
-            with ThreadPoolExecutor(max_workers=int(os.getenv("MAX_WORKERS", 5))) as executor:
+            with ThreadPoolExecutor(max_workers=int(os.getenv("MAX_WORKERS", 2))) as executor:
                 futures = {executor.submit(embedder.embed): embedder for embedder in embedders}
                 for future, embedder in futures.items():
                     try:

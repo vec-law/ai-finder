@@ -44,15 +44,6 @@ def set_embedding_config(config_id, embedding_hash, vector_size):
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute(f"""
-            ALTER TABLE embedding
-            ALTER COLUMN embedding TYPE vector({vector_size})
-        """)
-        cur.execute("""
-            UPDATE config
-            SET embedding_hash = %s
-            WHERE id = %s
-        """, (embedding_hash, config_id))
         cur.execute("""
             DELETE FROM embedding
             WHERE content_id IN (
@@ -62,6 +53,15 @@ def set_embedding_config(config_id, embedding_hash, vector_size):
                 WHERE f.config_id = %s
             )
         """, (config_id,))
+        cur.execute(f"""
+            ALTER TABLE embedding
+            ALTER COLUMN embedding TYPE vector({vector_size})
+        """)
+        cur.execute("""
+            UPDATE config
+            SET embedding_hash = %s
+            WHERE id = %s
+        """, (embedding_hash, config_id))
         cur.execute("""
             INSERT INTO embedding (content_id, status_id)
             SELECT c.id, (SELECT id FROM status WHERE name = 'pending')
