@@ -36,19 +36,22 @@ outputs = llm_4b.generate(**inputs, max_new_tokens=50, do_sample=False)
 search_phrase = tokenizer_4b.decode(outputs[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
 print(f"Fraza wyszukiwania: {search_phrase}")
 
-# === EMBEDDING SEARCH TOP 300 ===
+# === EMBEDDING SEARCH TOP 500 ===
 
 query_embedding = get_embedding(search_phrase, is_query=True)
 link_ids = search_links(query_embedding)
-links = get_links(link_ids[:300])
+links = get_links(link_ids[:500])
 
 # === FILTROWANIE PRZEZ QWEN - PO 1 WYNIKU ===
 
 print("\nSprawdzanie wyników:")
 selected_links = []
+rejected_links = []
+
+os.makedirs("temp", exist_ok=True)
 
 for i, link in enumerate(links, 1):
-    print(f"Sprawdzam {i}/300: {link['title']}...", end=" ", flush=True)
+    print(f"Sprawdzam {i}/500: {link['title']}...", end=" ", flush=True)
 
     messages = [
         {"role": "system", "content": general_prompt + filter_prompt},
@@ -67,11 +70,17 @@ for i, link in enumerate(links, 1):
     response = tokenizer_4b.decode(outputs[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True).strip().lower()
 
     if "tak" in response or "yes" in response:
-        print("✓")
+        print(f"✓\n  {link['url']}")
         selected_links.append(link)
+        with open("temp/accepted.json", "w", encoding="utf-8") as f:
+            json.dump(selected_links, f, ensure_ascii=False, indent=2)
     else:
-        print("✗")
+        print(f"✗\n  {link['url']}")
+        rejected_links.append(link)
+        with open("temp/rejected.json", "w", encoding="utf-8") as f:
+            json.dump(rejected_links, f, ensure_ascii=False, indent=2)
 
 print(f"\nWybrane: {len(selected_links)}")
 for link in selected_links:
-    print(f"  {link['title']}")
+    print(f"  {link['title']}\n  {link['url']}")
+    

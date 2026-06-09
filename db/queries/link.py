@@ -49,11 +49,11 @@ def get_links(link_ids):
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT l.id, l.title, c.content FROM link l
+            SELECT l.id, l.title, l.url, c.content FROM link l
             JOIN content c ON c.link_id = l.id
             WHERE l.id IN %s
         """, (tuple(link_ids),))
-        rows = {row[0]: {"id": row[0], "title": row[1], "content": row[2]} for row in cur.fetchall()}
+        rows = {row[0]: {"id": row[0], "title": row[1], "url": row[2], "content": row[3]} for row in cur.fetchall()}
         return [rows[link_id] for link_id in link_ids if link_id in rows]
     finally:
         conn.close()
