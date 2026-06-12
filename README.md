@@ -141,14 +141,10 @@ uv sync
 | `OPENAI_API_KEY` | Klucz API OpenAI / OpenAI API key | |
 | `HF_TOKEN` | Token HuggingFace | |
 
-**PL:** Przykład:
+## Przykłady promptów (Prompt examples)
 
-**EN:** Example:
-
-```dotenv
-SYSTEM_PROMPT=Jesteś wyszukiwarką [...]. Odpowiadaj na podstawie dostarczonych wyników wyszukiwania. Jeśli pytanie nie dotyczy [...], poinformuj użytkownika że możesz pomóc tylko w wyszukiwaniu [...].
-EXPANDER_PROMPT=Rozszerz zapytanie użytkownika o synonimy i powiązane terminy dla lepszego wyszukiwania. Zwróć tylko rozszerzone zapytanie bez żadnych komentarzy.
-```
+| SYSTEM_PROMPT | EXPANDER_PROMPT |
+| Jesteś wyszukiwarką [...]. Odpowiadaj na podstawie dostarczonych wyników wyszukiwania. Jeśli pytanie nie dotyczy [...], poinformuj użytkownika że możesz pomóc tylko w wyszukiwaniu [...]. | Rozszerz zapytanie użytkownika o synonimy i powiązane terminy dla lepszego wyszukiwania. Zwróć tylko rozszerzone zapytanie bez żadnych komentarzy. |
 
 ## Uruchomienie (Usage)
 
