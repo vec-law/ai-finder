@@ -144,6 +144,7 @@ uv sync
 ## Przykłady promptów (Prompt examples)
 
 | SYSTEM_PROMPT | EXPANDER_PROMPT |
+|---|---|
 | Jesteś wyszukiwarką [...]. Odpowiadaj na podstawie dostarczonych wyników wyszukiwania. Jeśli pytanie nie dotyczy [...], poinformuj użytkownika że możesz pomóc tylko w wyszukiwaniu [...]. | Rozszerz zapytanie użytkownika o synonimy i powiązane terminy dla lepszego wyszukiwania. Zwróć tylko rozszerzone zapytanie bez żadnych komentarzy. |
 
 ## Uruchomienie (Usage)
