@@ -1,27 +1,20 @@
 from db.connection import get_connection
 
-def save_fetcher(config_id, url):
+def get_or_create_fetcher(name):
     conn = get_connection()
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id FROM fetcher
-            WHERE config_id = %s
-            AND url = %s
-        """, (config_id, url))
-
-        result = cur.fetchone()
-        if result:
-            return result[0]
-
-        cur.execute("""
-            INSERT INTO fetcher (config_id, url)
-            VALUES (%s, %s)
+            INSERT INTO fetcher (name) VALUES (%s)
+            ON CONFLICT (name) DO NOTHING
             RETURNING id
-        """, (config_id, url))
-        conn.commit()
-
+        """, (name,))
+        row = cur.fetchone()
+        if row:
+            conn.commit()
+            return row[0]
+        conn.rollback()
+        cur.execute("SELECT id FROM fetcher WHERE name = %s", (name,))
         return cur.fetchone()[0]
-    
     finally:
         conn.close()

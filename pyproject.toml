@@ -1,0 +1,17 @@
+[project]
+name = "ai-finder"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4",
+    "curl-cffi",
+    "openai",
+    "psycopg2-binary",
+    "python-dotenv",
+    "sentence-transformers",
+    "torch",
+    "trafilatura",
+    "transformers",
+]

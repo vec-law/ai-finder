@@ -1,84 +1,48 @@
 import time
-import os
-from dotenv import load_dotenv
-from fetcher.factory import get_fetchers
-from config_manager import set_config
-from db.queries.link import del_expired_links
-from db.queries.content import set_contents_pending, get_pending_content_ids
-from db.queries.embedding import set_embeddings_pending, get_pending_embedding_ids
+import traceback
 from concurrent.futures import ThreadPoolExecutor
-from content_embedder import ContentEmbedder
-
-load_dotenv()
+from embedder import Embedder
+from ingester import Ingester
+from page import Page
 
 def run_worker():
     while True:
         try:
-            config_id = set_config()
-            fetchers = get_fetchers(config_id)
-            del_expired_links(config_id)
-            set_contents_pending()
-            set_embeddings_pending()
+            embedder = Embedder()
 
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print(f"Błąd inicjalizacji: {e}")
-            time.sleep(60)
-            continue
+            ingester = Ingester(embedder.get_embedding)
 
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            futures = {executor.submit(fetcher.fetch_links): fetcher for fetcher in fetchers}
-            for future, fetcher in futures.items():
-                try:
-                    future.result()
-                except Exception as e:
-                    print(f"[{fetcher.url}] Błąd fetch_links: {e}")
+            page = Page(
+                ingester.fetcher_id,
+                embedder.model_name,
+                embedder.vector_size
+            )
 
-        for fetcher in fetchers:
-            try:
-                pending_content_ids = get_pending_content_ids(fetcher.fetcher_id)
-            except Exception as e:
-                print(f"Błąd pobierania contentów: {e}")
-                continue
+            page.del_expired_links()
+            ingester.fetch_links(
+                page.id,
+                page.url,
+                page.page_max,
+                page.page_type
+            )
 
-            try:
-                content_fetchers = fetcher.get_content_fetchers(pending_content_ids)
-            except Exception as e:
-                print(f"Błąd content_fetchers: {e}")
-                continue
-
-            if not content_fetchers:
-                continue
+            page.set_content_pending()
+            content_ids = page.get_content_ids()
 
             with ThreadPoolExecutor(max_workers=2) as executor:
-                futures = {executor.submit(content_fetcher.fetch_content): content_fetcher for content_fetcher in content_fetchers}
-                for future, content_fetcher in futures.items():
-                    try:
-                        future.result()
-                    except Exception as e:
-                        print(f"Błąd fetch_content: {e}")
+                executor.map(ingester.fetch_content, content_ids)
 
-        for fetcher in fetchers:
-            try:
-                pending_embedding_ids = get_pending_embedding_ids(fetcher.fetcher_id)
-            except Exception as e:
-                print(f"Błąd pobierania embeddingów: {e}")
-                continue
+            page.set_embedding_pending()
+            embedding_ids = page.get_embedding_ids()
 
-            embedders = [ContentEmbedder(embedding_id) for embedding_id in pending_embedding_ids]
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                executor.map(ingester.compute_embedding, embedding_ids)
 
-            if not embedders:
-                continue
+            page.del_incomplete_links()
 
-            with ThreadPoolExecutor(max_workers=int(os.getenv("MAX_WORKERS", 2))) as executor:
-                futures = {executor.submit(embedder.embed): embedder for embedder in embedders}
-                for future, embedder in futures.items():
-                    try:
-                        future.result()
-                    except Exception as e:
-                        print(f"Błąd embed: {e}")
-
-        return  # TODO: remove in production
-
-        time.sleep(int(os.getenv("INTERVAL", 3600)))
+        except Exception as e:
+            traceback.print_exc()
+            print(f"Błąd: {e}")
+            time.sleep(60)
+            continue
+        time.sleep(3600)

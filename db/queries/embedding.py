@@ -1,21 +1,38 @@
 from db.connection import get_connection
 
-def set_embeddings_pending():
+def set_embedding_pending(page_id):
     conn = get_connection()
     try:
         cur = conn.cursor()
         cur.execute("""
+            INSERT INTO embedding (content_id, status_id)
+            SELECT c.id, (SELECT id FROM status WHERE name = 'pending')
+            FROM content c
+            JOIN link l ON l.id = c.link_id
+            WHERE l.page_id = %s
+            AND c.status_id = (SELECT id FROM status WHERE name = 'completed')
+            AND c.content IS NOT NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM embedding e WHERE e.content_id = c.id
+            )
+        """, (page_id,))
+        cur.execute("""
             UPDATE embedding
             SET status_id = (SELECT id FROM status WHERE name = 'pending')
-            WHERE status_id IN (
-                SELECT id FROM status WHERE name IN ('running', 'failed')
+            WHERE content_id IN (
+                SELECT c.id FROM content c
+                JOIN link l ON l.id = c.link_id
+                WHERE l.page_id = %s
+                AND c.status_id = (SELECT id FROM status WHERE name = 'completed')
+                AND c.content IS NOT NULL
             )
-        """)
+            AND status_id != (SELECT id FROM status WHERE name = 'completed')
+        """, (page_id,))
         conn.commit()
     finally:
         conn.close()
 
-def get_pending_embedding_ids(fetcher_id):
+def get_embedding_ids(page_id):
     conn = get_connection()
     try:
         cur = conn.cursor()
@@ -23,9 +40,9 @@ def get_pending_embedding_ids(fetcher_id):
             SELECT e.id FROM embedding e
             JOIN content c ON c.id = e.content_id
             JOIN link l ON l.id = c.link_id
-            WHERE l.fetcher_id = %s
+            WHERE l.page_id = %s
             AND e.status_id = (SELECT id FROM status WHERE name = 'pending')
-        """, (fetcher_id, ))
+        """, (page_id,))
         return [row[0] for row in cur.fetchall()]
     finally:
         conn.close()
@@ -35,16 +52,17 @@ def get_embedding_content(embedding_id):
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT c.content FROM content c
-            JOIN embedding e ON e.content_id = c.id
+            SELECT c.content, s.name FROM embedding e
+            JOIN content c ON c.id = e.content_id
+            JOIN status s ON s.id = c.status_id
             WHERE e.id = %s
         """, (embedding_id,))
-        result = cur.fetchone()
-        return result[0] if result else None
+        row = cur.fetchone()
+        return row if row else None
     finally:
         conn.close()
 
-def update_embedding(embedding_id, embedding, status):
+def update_embedding(embedding_id, embedding_str, status):
     conn = get_connection()
     try:
         cur = conn.cursor()
@@ -53,7 +71,7 @@ def update_embedding(embedding_id, embedding, status):
             SET embedding = %s,
                 status_id = (SELECT id FROM status WHERE name = %s)
             WHERE id = %s
-        """, (embedding, status, embedding_id))
+        """, (embedding_str, status, embedding_id))
         conn.commit()
         return True
     finally:
