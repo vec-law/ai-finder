@@ -8,5 +8,9 @@ while True:
         continue
     if query.lower() == "exit":
         break
+    
     response = rag.run(query)
-    print(f"\n{response}\n")
+    if response is None:
+        print("\nBłąd: nie udało się uzyskać odpowiedzi.\n")
+    else:
+        print(f"\n{response}\n")
