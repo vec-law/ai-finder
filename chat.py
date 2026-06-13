@@ -2,9 +2,6 @@ from rag import RAG
 
 rag = RAG()
 
-if not rag.domain:
-    print("Uwaga: baza nie zawiera jeszcze zaindeksowanych danych. Uruchom najpierw run_indexer.py.")
-
 while True:
     query = input("Zapytanie: ").strip()
     if not query:

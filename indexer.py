@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor
 from embedder import Embedder
 from ingester import Ingester
 from page import Page
-from rag import RAG
 
 def run_indexer():
     while True:
@@ -18,10 +17,6 @@ def run_indexer():
                 embedder.model_name,
                 embedder.vector_size
             )
-
-            rag = RAG(embedder)
-
-            page.update_domain(rag.get_domain(page.url))
 
             page.del_expired_links()
             ingester.fetch_links(
