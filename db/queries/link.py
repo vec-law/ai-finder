@@ -33,28 +33,6 @@ def del_expired_links(page_id):
     finally:
         conn.close()
 
-def del_incomplete_links(page_id):
-    conn = get_connection()
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            DELETE FROM link
-            WHERE page_id = %s
-            AND id IN (
-                SELECT l.id FROM link l
-                LEFT JOIN content c ON c.link_id = l.id
-                LEFT JOIN embedding e ON e.content_id = c.id
-                LEFT JOIN status cs ON cs.id = c.status_id
-                LEFT JOIN status es ON es.id = e.status_id
-                WHERE l.page_id = %s
-                AND (cs.name IS NULL OR cs.name != 'completed'
-                    OR es.name IS NULL OR es.name != 'completed')
-            )
-        """, (page_id, page_id))
-        conn.commit()
-    finally:
-        conn.close()
-
 def get_links(link_ids):
     conn = get_connection()
     try:

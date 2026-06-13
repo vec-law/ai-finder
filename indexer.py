@@ -43,8 +43,6 @@ def run_indexer():
             with ThreadPoolExecutor(max_workers=2) as executor:
                 executor.map(ingester.compute_embedding, embedding_ids)
 
-            page.del_incomplete_links()
-
         except Exception as e:
             traceback.print_exc()
             print(f"Błąd: {e}")
