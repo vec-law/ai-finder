@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from db.queries.page import get_or_create_page, update_embedding_config as db_update_embedding_config, update_domain as db_update_domain
-from db.queries.link import del_expired_links as db_del_expired_links, del_incomplete_links as db_del_incomplete_links
+from db.queries.link import del_expired_links as db_del_expired_links
 from db.queries.content import set_content_pending as db_set_content_pending, get_content_ids as db_get_content_ids
 from db.queries.embedding import set_embedding_pending as db_set_embedding_pending, get_embedding_ids as db_get_embedding_ids
 
@@ -23,9 +23,6 @@ class Page:
 
     def del_expired_links(self):
         db_del_expired_links(self.id)
-
-    def del_incomplete_links(self):
-        db_del_incomplete_links(self.id)
 
     def set_content_pending(self):
         db_set_content_pending(self.id)
