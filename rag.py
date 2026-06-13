@@ -68,7 +68,7 @@ class RAG:
     def system_prompt(self):
         if not self.domain:
             return "Odpowiadaj na podstawie dostarczonych wyników wyszukiwania."
-        return f"Jesteś wyszukiwarką {self.domain}. Odpowiadaj na podstawie dostarczonych wyników wyszukiwania. Jeśli pytanie nie dotyczy {self.domain}, poinformuj użytkownika że możesz pomóc tylko w wyszukiwaniu {self.domain}."
+        return f"Jesteś wyszukiwarką w dziedzinie: {self.domain}. Odpowiadaj na podstawie dostarczonych wyników wyszukiwania. Jeśli pytanie nie dotyczy dziedziny: {self.domain}, poinformuj użytkownika że możesz pomóc tylko w tej dziedzinie."
 
     def run(self, query):
         expanded_query = self._expand(query)
