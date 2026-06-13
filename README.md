@@ -1,8 +1,8 @@
 # rag-searcher
 
-**PL:** System RAG (Retrieval-Augmented Generation) do przeszukiwania automatycznie zaindeksowanych i paginowanych stron internetowych za pomocą zapytań w języku naturalnym, oparty na embeddingach wektorowych oraz modelach LLM.
+**PL:** System RAG (Retrieval-Augmented Generation) do przeszukiwania automatycznie indeksowanych, paginowanych stron internetowych za pomocą zapytań w języku naturalnym, oparty na embeddingach wektorowych oraz modelach LLM.
 
-**EN:** A RAG (Retrieval-Augmented Generation) system for searching automatically indexed paginated websites using natural language queries, based on vector embeddings and LLM models.
+**EN:** A RAG (Retrieval-Augmented Generation) system for searching automatically indexed, paginated websites using natural language queries, based on vector embeddings and LLM models.
 
 ## Architektura (Architecture)
 
