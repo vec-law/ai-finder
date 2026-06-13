@@ -1,26 +1,21 @@
-# ai-finder
+# rag-searcher
 
-**PL:** Program do przeszukiwania paginowanych stron internetowych za pomocą języka naturalnego. Użytkownik podaje jedynie adres strony i określa dziedzinę wyszukiwania, a program automatycznie indeksuje jej zawartość. Użytkownik opisuje czego szuka w języku naturalnym i otrzymuje odpowiedź na podstawie zapisanych treści.
+**PL:** System RAG (Retrieval-Augmented Generation) do przeszukiwania automatycznie zaindeksowanych i paginowanych stron internetowych za pomocą zapytań w języku naturalnym, oparty na embeddingach wektorowych oraz modelach LLM.
 
-**EN:** A program for searching paginated websites using natural language. The user provides only the URL and defines the search domain, and the program automatically indexes the content. The user describes what they are looking for in natural language and receives an answer based on the indexed content.
-
-## Zastrzeżenie (Disclaimer)
-
-**PL:** Oprogramowanie służy wyłącznie do celów edukacyjnych i badawczych. Autor nie ponosi odpowiedzialności za sposób wykorzystania narzędzia ani za zgodność jego użycia z regulaminami serwisów internetowych.
-
-**EN:** This software is for educational and research purposes only. The author bears no responsibility for the use of the tool or for compliance with the terms of service of any website.
+**EN:** A RAG (Retrieval-Augmented Generation) system for searching automatically indexed paginated websites using natural language queries, based on vector embeddings and LLM models.
 
 ## Architektura (Architecture)
 
 **PL:** Program składa się z dwóch niezależnych procesów:
 
 **Indexer** (`run_indexer.py`) — działa w tle, odświeża indeks co godzinę:
-1. Pobiera linki ze wszystkich podstron paginacji
-2. Pobiera i ekstrahuje treść każdego linku (`trafilatura`)
-3. Oblicza embedding wektorowy i zapisuje do PostgreSQL (`pgvector`)
+1. Określa dziedzinę strony przez LLM
+2. Pobiera linki ze wszystkich podstron paginacji
+3. Pobiera i ekstrahuje treść każdego linku (`trafilatura`)
+4. Oblicza embedding wektorowy i zapisuje do PostgreSQL (`pgvector`)
 
 **Chat** (`chat.py`) — odpowiada na zapytania:
-1. Rozszerza zapytanie o synonimy przez LLM (`EXPANDER_PROMPT`)
+1. Rozszerza zapytanie o synonimy przez LLM
 2. Oblicza embedding rozszerzonego zapytania
 3. Wyszukuje top-N dokumentów przez cosine similarity (`pgvector`)
 4. Generuje odpowiedź przez LLM na podstawie pobranych dokumentów
@@ -30,12 +25,13 @@
 **EN:** The program consists of two independent processes:
 
 **Indexer** (`run_indexer.py`) — runs in the background, refreshes the index every hour:
-1. Fetches links from all pagination subpages
-2. Fetches and extracts content from each link (`trafilatura`)
-3. Computes vector embeddings and saves to PostgreSQL (`pgvector`)
+1. Determines the domain of the page via LLM
+2. Fetches links from all pagination subpages
+3. Fetches and extracts content from each link (`trafilatura`)
+4. Computes vector embeddings and saves to PostgreSQL (`pgvector`)
 
 **Chat** (`chat.py`) — answers queries:
-1. Expands the query with synonyms via LLM (`EXPANDER_PROMPT`)
+1. Expands the query with synonyms via LLM
 2. Computes the embedding of the expanded query
 3. Retrieves top-N documents by cosine similarity (`pgvector`)
 4. Generates a response via LLM based on the retrieved documents
@@ -48,7 +44,7 @@
 - spośród pozostałych linków wybierany jest dominujący segment URL przez zliczanie wystąpień
 - paginacja kończy się automatycznie gdy kolejne strony zaczynają zwracać te same linki
 
-Zmiana indeksowanego serwisu wymaga tylko zmiany `PAGE_URL` i `SYSTEM_PROMPT` w `.env`.
+Zmiana indeksowanego serwisu wymaga tylko zmiany `PAGE_URL` w `.env`.
 
 ---
 
@@ -58,7 +54,7 @@ Zmiana indeksowanego serwisu wymaga tylko zmiany `PAGE_URL` i `SYSTEM_PROMPT` w 
 - among the remaining links, the dominant URL segment is selected by counting occurrences
 - pagination ends automatically when consecutive pages start returning the same links
 
-Switching to a different website requires only changing `PAGE_URL` and `SYSTEM_PROMPT` in `.env`.
+Switching to a different website requires only changing `PAGE_URL` in `.env`.
 
 ## Rozszerzalność (Extensibility)
 
@@ -109,8 +105,8 @@ LLM:
 ## Instalacja (Installation)
 
 ```bash
-git clone https://github.com/vec-law/ai-finder.git
-cd ai-finder
+git clone https://github.com/vec-law/rag-searcher.git
+cd rag-searcher
 uv sync
 ```
 
@@ -136,16 +132,10 @@ uv sync
 | `EMBEDDING_VECTOR_SIZE` | Rozmiar wektora embeddingów / Embedding vector size | `3072` |
 | `LLM_MODEL` | Model LLM | `gpt-4o` |
 | `RAG_LIMIT` | Liczba dokumentów przekazywanych do LLM / Number of documents passed to LLM | `20` |
-| `SYSTEM_PROMPT` | Instrukcja systemowa LLM / LLM system prompt | |
-| `EXPANDER_PROMPT` | Instrukcja expandera zapytań / Query expander prompt | |
 | `OPENAI_API_KEY` | Klucz API OpenAI / OpenAI API key | |
 | `HF_TOKEN` | Token HuggingFace | |
 
-## Przykłady promptów (Prompt examples)
 
-| SYSTEM_PROMPT | EXPANDER_PROMPT |
-|---|---|
-| Jesteś wyszukiwarką [...]. Odpowiadaj na podstawie dostarczonych wyników wyszukiwania. Jeśli pytanie nie dotyczy [...], poinformuj użytkownika że możesz pomóc tylko w wyszukiwaniu [...]. | Rozszerz zapytanie użytkownika o synonimy i powiązane terminy dla lepszego wyszukiwania. Zwróć tylko rozszerzone zapytanie bez żadnych komentarzy. |
 
 ## Uruchomienie (Usage)
 
@@ -166,12 +156,12 @@ uv run python chat.py
 
 **PL:**
 ```
-ai-finder/
+rag-searcher/
 ├── chat.py            # interfejs czatu
-├── run_indexer.py     # uruchamia indexer
+├── run_indexer.py     # uruchomienie indexera
 ├── indexer.py         # pipeline indeksowania
 ├── ingester.py        # pobieranie i ekstrakcja treści
-├── embedder.py        # obliczanie embeddingów
+├── embedder.py        # klasa embeddera
 ├── rag.py             # wyszukiwanie i generowanie odpowiedzi
 ├── page.py            # klasa indeksowanej strony
 ├── pyproject.toml
@@ -185,12 +175,12 @@ ai-finder/
 
 **EN:**
 ```
-ai-finder/
+rag-searcher/
 ├── chat.py            # chat interface
-├── run_indexer.py     # runs the indexer
+├── run_indexer.py     # indexer entry point
 ├── indexer.py         # indexing pipeline
 ├── ingester.py        # content fetching and extraction
-├── embedder.py        # embedding computation
+├── embedder.py        # embedder class
 ├── rag.py             # search and response generation
 ├── page.py            # indexed page class
 ├── pyproject.toml
