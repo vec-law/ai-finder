@@ -69,7 +69,12 @@ def update_embedding_config(page_id, embedding_model_name, embedding_vector_size
                 WHERE l.page_id = %s
             )
         """, (page_id,))
+        conn.commit()
+
+        conn.autocommit = True
         cur.execute(f"ALTER TABLE embedding ALTER COLUMN embedding TYPE VECTOR({embedding_vector_size})")
+        conn.autocommit = False
+
         cur.execute("""
             UPDATE page SET embedding_model_name = %s, embedding_vector_size = %s WHERE id = %s
         """, (embedding_model_name, embedding_vector_size, page_id))
