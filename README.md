@@ -133,7 +133,7 @@ uv sync
 | `LLM_MODEL` | Model LLM | `gpt-4o` |
 | `RAG_LIMIT` | Liczba dokumentów przekazywanych do LLM / Number of documents passed to LLM | `20` |
 | `OPENAI_API_KEY` | Klucz API OpenAI / OpenAI API key | |
-| `HF_TOKEN` | Token HuggingFace | |
+| `HF_TOKEN` | Token HuggingFace / HuggingFace token | |
 
 
 
