@@ -4,12 +4,6 @@
 
 **EN:** A RAG (Retrieval-Augmented Generation) system for searching automatically indexed, paginated websites using natural language queries, based on vector embeddings and LLM models.
 
-## Zastrzeżenie (Disclaimer)
-
-**PL**: Oprogramowanie służy wyłącznie do celów edukacyjnych i badawczych. Autor nie ponosi odpowiedzialności za sposób wykorzystania narzędzia ani za zgodność jego użycia z regulaminami serwisów internetowych.
-
-**EN**: This software is for educational and research purposes only. The author bears no responsibility for the use of the tool or for compliance with the terms of service of any website.
-
 ## Architektura (Architecture)
 
 **PL:** Program składa się z dwóch niezależnych procesów:
@@ -205,6 +199,12 @@ rag-searcher/
 
 **EN:**
 - **v0.1.0**: Initial version
+
+## Zastrzeżenie (Disclaimer)
+
+**PL**: Oprogramowanie służy wyłącznie do celów edukacyjnych i badawczych. Autor nie ponosi odpowiedzialności za sposób wykorzystania narzędzia ani za zgodność jego użycia z regulaminami serwisów internetowych.
+
+**EN**: This software is for educational and research purposes only. The author bears no responsibility for the use of the tool or for compliance with the terms of service of any website.
 
 ## Licencja (License)
 
