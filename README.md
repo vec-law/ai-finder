@@ -118,7 +118,7 @@ uv sync
 
 | Zmienna / Variable | Opis / Description | Domyślnie / Default |
 |---|---|---|
-| `DB_NAME` | Nazwa bazy danych / Database name | `ai_finder_db` |
+| `DB_NAME` | Nazwa bazy danych / Database name | `rag_searcher_db` |
 | `DB_USER` | Użytkownik PostgreSQL / PostgreSQL user | `postgres` |
 | `DB_PASSWORD` | Hasło / Password | |
 | `DB_HOST` | Host | `localhost` |
@@ -141,8 +141,8 @@ uv sync
 
 ```bash
 # Przygotowanie bazy / Database setup
-psql -U postgres -c "CREATE DATABASE ai_finder_db;"
-psql -U postgres -d ai_finder_db -c "CREATE EXTENSION vector;"
+psql -U postgres -c "CREATE DATABASE rag_searcher_db;"
+psql -U postgres -d rag_searcher_db -c "CREATE EXTENSION vector;"
 uv run python db/migrate.py
 
 # Indeksowanie / Indexing
