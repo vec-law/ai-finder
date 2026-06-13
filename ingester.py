@@ -15,15 +15,15 @@ load_dotenv()
 
 class Ingester:
     def __init__(self, get_embedding):
-        self.fetcher_name = os.getenv("FETCHER_NAME", "curl")
-        self.fetcher_id = db_get_or_create_fetcher(self.fetcher_name)
+        self._fetcher_name = os.getenv("FETCHER_NAME", "curl")
+        self.fetcher_id = db_get_or_create_fetcher(self._fetcher_name)
         self.get_embedding = get_embedding
 
     def fetch_links(self, page_id, url, page_max, page_type):
-        if page_type == "paginated" and self.fetcher_name == "curl":
+        if page_type == "paginated" and self._fetcher_name == "curl":
             self._fetch_links_paginated_curl(page_id, url, page_max)
         else:
-            raise ValueError(f"Nieznana kombinacja: page_type={page_type}, fetcher={self.fetcher_name}")
+            raise ValueError(f"Nieznana kombinacja: page_type={page_type}, fetcher={self._fetcher_name}")
 
     def fetch_content(self, content_id):
         time.sleep(5)
@@ -32,10 +32,10 @@ class Ingester:
         if not url:
             db_update_content(content_id, None, "failed")
             return
-        if self.fetcher_name == "curl":
+        if self._fetcher_name == "curl":
             text = self._fetch_content_curl(url, content_id)
         else:
-            raise ValueError(f"Nieznany fetcher: {self.fetcher_name}")
+            raise ValueError(f"Nieznany fetcher: {self._fetcher_name}")
         if not text:
             db_update_content(content_id, None, "failed")
             return
