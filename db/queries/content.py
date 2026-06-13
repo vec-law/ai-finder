@@ -64,6 +64,15 @@ def set_content_pending(page_id):
             )
             AND status_id != (SELECT id FROM status WHERE name = 'completed')
         """, (page_id,))
+        cur.execute("""
+            UPDATE content
+            SET status_id = (SELECT id FROM status WHERE name = 'pending')
+            WHERE link_id IN (
+                SELECT id FROM link WHERE page_id = %s
+            )
+            AND status_id = (SELECT id FROM status WHERE name = 'completed')
+            AND content IS NULL
+        """, (page_id,))
         conn.commit()
     finally:
         conn.close()

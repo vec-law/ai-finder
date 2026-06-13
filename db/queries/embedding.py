@@ -28,6 +28,19 @@ def set_embedding_pending(page_id):
             )
             AND status_id != (SELECT id FROM status WHERE name = 'completed')
         """, (page_id,))
+        cur.execute("""
+            UPDATE embedding
+            SET status_id = (SELECT id FROM status WHERE name = 'pending')
+            WHERE content_id IN (
+                SELECT c.id FROM content c
+                JOIN link l ON l.id = c.link_id
+                WHERE l.page_id = %s
+                AND c.status_id = (SELECT id FROM status WHERE name = 'completed')
+                AND c.content IS NOT NULL
+            )
+            AND status_id = (SELECT id FROM status WHERE name = 'completed')
+            AND embedding IS NULL
+        """, (page_id,))
         conn.commit()
     finally:
         conn.close()
@@ -68,7 +81,7 @@ def update_embedding(embedding_id, embedding_str, status):
         cur = conn.cursor()
         cur.execute("""
             UPDATE embedding
-            SET embedding = %s,
+            SET embedding = %s::vector,
                 status_id = (SELECT id FROM status WHERE name = %s)
             WHERE id = %s
         """, (embedding_str, status, embedding_id))
