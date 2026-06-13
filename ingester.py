@@ -46,19 +46,23 @@ class Ingester:
         result = db_get_embedding_content(embedding_id)
         if not result:
             db_update_embedding(embedding_id, None, "failed")
+            print(f"[embedding_id: {embedding_id}] failed")
             return
         content, status = result
         if status != "completed" or not content:
             db_update_embedding(embedding_id, None, "failed")
+            print(f"[embedding_id: {embedding_id}] failed")
             return
         start = len(content) // 5
         end = 4 * len(content) // 5
         embedding = self.get_embedding(content[start:end])
         if not embedding:
             db_update_embedding(embedding_id, None, "failed")
+            print(f"[embedding_id: {embedding_id}] failed")
             return
         embedding_str = "[" + ",".join(map(str, embedding)) + "]"
         db_update_embedding(embedding_id, embedding_str, "completed")
+        print(f"[embedding_id: {embedding_id}] completed")
 
     def _fetch_content_curl(self, url, content_id):
         response = self._fetch_curl(url)
