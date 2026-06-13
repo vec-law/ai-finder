@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS page (
     fetcher_id INTEGER REFERENCES fetcher(id),
     embedding_model_name TEXT NOT NULL,
     embedding_vector_size INTEGER NOT NULL,
+    domain TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     UNIQUE (url, page_type_id, page_max, fetcher_id)
 );

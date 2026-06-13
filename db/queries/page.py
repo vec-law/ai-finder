@@ -1,5 +1,24 @@
 from db.connection import get_connection
 
+def update_domain(page_id, domain):
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE page SET domain = %s WHERE id = %s", (domain, page_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+def get_domain(url):
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT domain FROM page WHERE url = %s LIMIT 1", (url,))
+        row = cur.fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
 def get_or_create_page(url, page_type, page_max, fetcher_id, embedding_model_name, embedding_vector_size):
     conn = get_connection()
     try:
