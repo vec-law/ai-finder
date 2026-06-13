@@ -72,7 +72,7 @@ class RAG:
     def _generate_openai(self, query, results):
         from openai import RateLimitError, APIError
         context = "\n---\n".join([
-            f"{r['title']}\n{r['url']}\n{r['content'][len(r['content'])//5:4*len(r['content'])//5]}"
+            f"{r['content'][len(r['content'])//10:9*len(r['content'])//10]}"
             for r in results
         ])
         while True:
@@ -101,7 +101,7 @@ class RAG:
 
     def _generate_qwen(self, query, results):
         context = "\n---\n".join([
-            f"{r['title']}\n{r['url']}\n{r['content'][len(r['content'])//5:4*len(r['content'])//5]}"
+            f"{r['content'][len(r['content'])//10:9*len(r['content'])//10]}"
             for r in results
         ])
         messages = [

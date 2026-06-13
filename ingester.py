@@ -53,8 +53,8 @@ class Ingester:
             db_update_embedding(embedding_id, None, "failed")
             print(f"[embedding_id: {embedding_id}] failed")
             return
-        start = len(content) // 5
-        end = 4 * len(content) // 5
+        start = len(content) // 10
+        end = 9 * len(content) // 10
         embedding = self.get_embedding(content[start:end])
         if not embedding:
             db_update_embedding(embedding_id, None, "failed")
