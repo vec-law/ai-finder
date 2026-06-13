@@ -13,10 +13,10 @@ class RAG:
         self.model_name = os.getenv("LLM_MODEL")
         self.rag_limit = int(os.getenv("RAG_LIMIT", 20))
         self.domain_prompt = "Określ jednym słowem dziedzinę strony internetowej pod podanym adresem URL. Zwróć tylko jedno słowo bez żadnych komentarzy."
-        self._domain = None 
+        self._domain = None
         self.expander_prompt = "Rozszerz zapytanie użytkownika o synonimy i powiązane terminy dla lepszego wyszukiwania. Zwróć tylko rozszerzone zapytanie bez żadnych komentarzy."
         self.embedder = embedder or Embedder()
-        
+
         if self.model_name == "gpt-4o":
             from openai import OpenAI
             self._client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -25,9 +25,9 @@ class RAG:
             self._get_domain = self._get_domain_openai
 
         elif self.model_name == "Qwen/Qwen3-4B":
-            from transformers import pipeline
-            self._pipeline = pipeline(
-                "text-generation",
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            self._model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
                 torch_dtype="auto",
                 device_map="auto"
@@ -38,7 +38,26 @@ class RAG:
 
         else:
             raise NotImplementedError(f"Brak implementacji dla modelu: {self.model_name}. Dodaj implementację do rag.py.")
-        
+
+    def _qwen_generate(self, messages, max_new_tokens=512, enable_thinking=False):
+        text = self._tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=enable_thinking
+        )
+        model_inputs = self._tokenizer([text], return_tensors="pt").to(self._model.device)
+        generated_ids = self._model.generate(
+            **model_inputs,
+            max_new_tokens=max_new_tokens
+        )
+        output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()
+        try:
+            index = len(output_ids) - output_ids[::-1].index(151668)
+        except ValueError:
+            index = 0
+        return self._tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip()
+
     @property
     def domain(self):
         if self._domain is None:
@@ -105,8 +124,7 @@ class RAG:
             {"role": "system", "content": self.expander_prompt},
             {"role": "user", "content": query}
         ]
-        result = self._pipeline(messages, max_new_tokens=256)[0]["generated_text"]
-        return result[-1]["content"]
+        return self._qwen_generate(messages, max_new_tokens=256)
 
     def _generate_qwen(self, query, results):
         context = "\n---\n".join([
@@ -117,8 +135,7 @@ class RAG:
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": f"{query}\n\n{context}"}
         ]
-        result = self._pipeline(messages, max_new_tokens=1024)[0]["generated_text"]
-        return result[-1]["content"]
+        return self._qwen_generate(messages, max_new_tokens=1024)
 
     def get_domain(self, url):
         return self._get_domain(url)
@@ -147,5 +164,4 @@ class RAG:
             {"role": "system", "content": self.domain_prompt},
             {"role": "user", "content": url}
         ]
-        result = self._pipeline(messages, max_new_tokens=10)[0]["generated_text"]
-        return result[-1]["content"].strip().lower()
+        return self._qwen_generate(messages, max_new_tokens=64)
