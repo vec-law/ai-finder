@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS content (
 CREATE TABLE IF NOT EXISTS embedding (
     id SERIAL PRIMARY KEY,
     content_id INTEGER REFERENCES content(id) ON DELETE CASCADE UNIQUE,
-    embedding VECTOR(1024),
+    embedding VECTOR(3072),
     status_id INTEGER REFERENCES status(id),
     created_at TIMESTAMP DEFAULT NOW()
 );
