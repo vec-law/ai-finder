@@ -5,7 +5,7 @@ from curl_cffi import requests
 from db.queries.fetcher import get_or_create_fetcher as db_get_or_create_fetcher
 from db.queries.link import save_links as db_save_links
 from db.queries.content import get_content_url as db_get_content_url, update_content as db_update_content
-from db.queries.embedding import get_embedding_content as db_get_embedding_content, update_embedding as db_update_embedding
+from db.queries.embedding import get_embedding_context as db_get_embedding_context, update_embedding as db_update_embedding
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from collections import Counter
@@ -43,19 +43,20 @@ class Ingester:
 
     def compute_embedding(self, embedding_id):
         db_update_embedding(embedding_id, None, "running")
-        result = db_get_embedding_content(embedding_id)
+        result = db_get_embedding_context(embedding_id)
         if not result:
             db_update_embedding(embedding_id, None, "failed")
             print(f"[embedding_id: {embedding_id}] failed")
             return
-        content, status = result
+        content, status, title, url = result
         if status != "completed" or not content:
             db_update_embedding(embedding_id, None, "failed")
             print(f"[embedding_id: {embedding_id}] failed")
             return
         start = len(content) // 10
         end = 9 * len(content) // 10
-        embedding = self.get_embedding(content[start:end])
+        text = f"{title}\n{url}\n{content[start:end]}"
+        embedding = self.get_embedding(text)
         if not embedding:
             db_update_embedding(embedding_id, None, "failed")
             print(f"[embedding_id: {embedding_id}] failed")

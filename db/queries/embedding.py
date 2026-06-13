@@ -60,14 +60,15 @@ def get_embedding_ids(page_id):
     finally:
         conn.close()
 
-def get_embedding_content(embedding_id):
+def get_embedding_context(embedding_id):
     conn = get_connection()
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT c.content, s.name FROM embedding e
+            SELECT c.content, s.name, l.title, l.url FROM embedding e
             JOIN content c ON c.id = e.content_id
             JOIN status s ON s.id = c.status_id
+            JOIN link l ON l.id = c.link_id
             WHERE e.id = %s
         """, (embedding_id,))
         row = cur.fetchone()
